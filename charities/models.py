@@ -1,5 +1,6 @@
 from django.db import models
 from accounts.models import User
+from django.db.models import Q
 
 
 class Benefactor(models.Model):
@@ -20,7 +21,21 @@ class Charity(models.Model):
     reg_number = models.CharField(max_length=10)
 
 
+class TaskManager(models.Manager):
+    def related_tasks_to_charity(self, user):
+        return self.filter(charity__user=user)
+
+    def related_tasks_to_benefactor(self, user):
+        return self.filter(assigned_benefactor__user=user)
+
+    def all_related_tasks_to_user(self, user):
+        return self.filter(
+            Q(state__exact="P") | Q(charity__user=user) | Q(assigned_benefactor__user=user)
+        )
+
+
 class Task(models.Model):
+    objects = TaskManager()
     assigned_benefactor = models.ForeignKey(Benefactor, null=True, on_delete=models.SET_NULL)
     charity = models.ForeignKey(Charity, on_delete=models.CASCADE)
     age_limit_from = models.IntegerField(blank=True, null=True)
